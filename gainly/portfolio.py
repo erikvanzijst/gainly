@@ -25,12 +25,12 @@ class PortfolioPerformance(object):
 
         # Convert datetime index to date
         df.index = df.index.date
-        # print(df)
 
         # Get end-of-day positions and values for each symbol
-        daily_positions = df[['symbol', 'price', 'position']].groupby([df.index, 'symbol']).last().reset_index(
-            names=['date', 'symbol'])
-        # print(daily_positions)
+        daily_positions = (df[['symbol', 'price', 'position']]
+                           .groupby([df.index, 'symbol'])
+                           .last()
+                           .reset_index(names=['date', 'symbol']))
 
         # Merge the eod prices with the daily positions, excluding eod prices for dates where we already have a price
         # from a transaction:
@@ -40,15 +40,14 @@ class PortfolioPerformance(object):
         # Create the cartesian product grid of all trade dates and symbols:
         grid = pd.DataFrame([(date, symbol)
                              for date in daily_positions['date'].unique()
-                             for symbol in daily_positions['symbol'].unique()], columns=['date', 'symbol'])
+                             for symbol in daily_positions['symbol'].unique()],
+                            columns=['date', 'symbol'])
         # Merge grid with positions data so that we can generate a position for each day and symbol
         daily_positions = daily_positions.merge(grid, how='outer', )
-        # print(daily_positions)
 
         # On dates where we don't have a trade for all symbols, fill the position with the previous day's position
         # for each symbol:
         daily_positions['position'] = daily_positions.groupby('symbol')['position'].ffill()
-        # print(daily_positions)
 
         return daily_positions
 
@@ -62,7 +61,6 @@ class PortfolioPerformance(object):
         # For days when we can't calculate the value of a symbol's position due to lack of both a trade price and an
         # EOD price, carry forward the previous day's value for that symbol:
         daily_positions['value'] = daily_positions.groupby('symbol')['value'].ffill()
-        # print(daily_positions)
 
         return daily_positions
 
