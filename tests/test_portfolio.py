@@ -5,23 +5,29 @@ from textwrap import dedent
 import pandas as pd
 import pytest
 
+from gainly.eod import QuoteFetcher, NullQuoteFetcher
 from gainly.portfolio import PortfolioPerformance
 
-eod_prices = pd.DataFrame({
-    'date': [date(2024, 12, 31),
-             date(2025, 1, 1),
-             date(2025, 1, 15),
-             date(2025, 3, 15),
-             date(2025, 3, 15)],
-    'symbol': ['IWDA', 'IWDA', 'IWDA', 'IWDA', 'EUNA.DE'],
-    'close': [0.9, 1.1, 2, 4, 2]
-})
+
+class MockQuoteFetcher(QuoteFetcher):
+    prices = pd.DataFrame({
+            'date': [date(2024, 12, 31),
+                     date(2025, 1, 1),
+                     date(2025, 1, 15),
+                     date(2025, 3, 15),
+                     date(2025, 3, 15)],
+            'symbol': ['IWDA', 'IWDA', 'IWDA', 'IWDA', 'EUNA.DE'],
+            'close': [0.9, 1.1, 2, 4, 2]
+        })
+    def get_oed_prices(self, symbol: str, date_from: date, date_to: date) -> pd.DataFrame:
+        return self.prices[self.prices['symbol'] == symbol]
+
 
 daily_positions_scenarios = [
     # The first scenario tests the construction of the running positions without additional EOD prices
     (
         # no eod prices:
-        None,
+        NullQuoteFetcher(),
         # expected daily positions:
         (pd.read_csv(StringIO(dedent("""\
                     date,symbol,price,position,close
@@ -38,7 +44,7 @@ daily_positions_scenarios = [
     # The second scenario tests the construction of the running positions with EOD prices for additional resolution
     (
         # EOD prices:
-        eod_prices,
+        MockQuoteFetcher(),
         # expected daily positions with additional EOD prices:
         (pd.read_csv(StringIO(dedent("""\
                     date,symbol,price,position,close
@@ -62,7 +68,7 @@ daily_positions_scenarios = [
 
 daily_valuations_scenarios = [
     (
-        None,
+        NullQuoteFetcher(),
         (pd.read_csv(StringIO(dedent("""\
                     date,symbol,price,position,close,value
                     2025-01-01,EUNA.DE,,,,
@@ -76,7 +82,7 @@ daily_valuations_scenarios = [
          .pipe(lambda df: df.assign(date=df['date'].dt.date))),
     ),
     (
-        eod_prices,
+        MockQuoteFetcher(),
         (pd.read_csv(StringIO(dedent("""\
                     date,symbol,price,position,close,value
                     2024-12-31,EUNA.DE,,,,
@@ -98,11 +104,11 @@ daily_valuations_scenarios = [
 
 positions_scenarios = [
     (
-        None,
+        NullQuoteFetcher(),
         pd.DataFrame({'symbol': ['EUNA.DE', 'IWDA'], 'position': [1.0, 5.0], 'value': [1.0, 15.0]}).set_index('symbol')
     ),
     (
-        eod_prices,
+        MockQuoteFetcher(),
         pd.DataFrame({'symbol': ['EUNA.DE', 'IWDA'], 'position': [1.0, 5.0], 'value': [2.0, 20.0]}).set_index('symbol')
     ),
 ]
@@ -123,20 +129,20 @@ class TestPortfolioPerformance:
             'quantity': [1, 1, 1, 2, 3]
         })
 
-    @pytest.mark.parametrize("eod_prices,expected", daily_positions_scenarios)
-    def test_daily_positions(self, transactions, eod_prices: pd.DataFrame, expected: pd.DataFrame):
-        portfolio = PortfolioPerformance(transactions)
-        result = portfolio.daily_positions(eod_prices)
+    @pytest.mark.parametrize("eod_fetcher,expected", daily_positions_scenarios)
+    def test_daily_positions(self, transactions, eod_fetcher, expected: pd.DataFrame):
+        portfolio = PortfolioPerformance(transactions, eod_fetcher)
+        result = portfolio.daily_positions()
         pd.testing.assert_frame_equal(result, expected)
 
-    @pytest.mark.parametrize("eod_prices,expected", daily_valuations_scenarios)
-    def test_daily_valuations(self, transactions, eod_prices: pd.DataFrame, expected):
-        portfolio = PortfolioPerformance(transactions)
-        result = portfolio.daily_valuations(eod_prices)
+    @pytest.mark.parametrize("eod_fetcher,expected", daily_valuations_scenarios)
+    def test_daily_valuations(self, transactions, eod_fetcher, expected):
+        portfolio = PortfolioPerformance(transactions, eod_fetcher)
+        result = portfolio.daily_valuations()
         pd.testing.assert_frame_equal(result, expected)
 
-    @pytest.mark.parametrize("eod_prices,expected", positions_scenarios)
-    def test_positions(self, transactions, eod_prices: pd.DataFrame, expected):
-        portfolio = PortfolioPerformance(transactions)
-        result = portfolio.positions(eod_prices)
+    @pytest.mark.parametrize("eod_fetcher,expected", positions_scenarios)
+    def test_positions(self, transactions, eod_fetcher, expected):
+        portfolio = PortfolioPerformance(transactions, eod_fetcher)
+        result = portfolio.positions()
         pd.testing.assert_frame_equal(result, expected)
