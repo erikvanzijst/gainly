@@ -7,5 +7,12 @@ Useful to keep a single view of a portfolio that might be scattered across multi
 ## Usage
 
 ```
+PYTHONPATH=. uv run streamlit run gainly/lit/main.py
+```
+
+
+## Tests
+
+```
 uv run pytest -s tests/
 ```

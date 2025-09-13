@@ -1,10 +1,18 @@
 import urllib
 from datetime import date, datetime, timezone, time, timedelta
+from functools import cache
 
 import pandas as pd
 import requests
 
 from gainly.eod import QuoteFetcher
+
+
+@cache
+def make_request(url: str) -> dict:
+    res = requests.get(url, headers={'User-Agent': 'Prutser'})
+    res.raise_for_status()
+    return res.json()
 
 
 class YahooFinance(QuoteFetcher):
@@ -18,13 +26,10 @@ class YahooFinance(QuoteFetcher):
              'period2': to_epoch(date_to),})
 
         url = f'https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?' + qs
-        # st.write(url)
-        res = requests.get(url, headers={'User-Agent': 'Prutser'})
-        res.raise_for_status()
-        payload = res.json()
+        payload: dict = make_request(url)
 
         tz = timezone(timedelta(seconds=payload['chart']['result'][0]['meta']['gmtoffset']))
-        timestamps = [datetime.fromtimestamp(ts, tz) for ts in payload['chart']['result'][0]['timestamp']]
+        timestamps = [datetime.fromtimestamp(ts, tz).date() for ts in payload['chart']['result'][0]['timestamp']]
         closes = payload['chart']['result'][0]['indicators']['quote'][0]['close']
 
         return pd.DataFrame({'date': timestamps, 'close': closes}).assign(symbol=symbol)
