@@ -1,5 +1,6 @@
 from datetime import date
 from functools import reduce
+from itertools import product
 
 import pandas as pd
 
@@ -30,12 +31,15 @@ class PortfolioPerformance(object):
         df['position'] = (df.assign(quantity=df['quantity'] * df['side'].map({'buy': 1, 'sell': -1}))
                             .groupby('symbol')['quantity']
                             .cumsum())
+        df['invested'] = (df.assign(invested=df['price'] * df['quantity'] * df['side'].map({'buy': 1, 'sell': -1}))
+                          .groupby('symbol')['invested']
+                          .cumsum())
 
         # Convert datetime index to date
         df.index = df.index.date
 
-        # Get end-of-day positions and values for each symbol
-        daily_positions = (df[['symbol', 'price', 'position']]
+        # Get end-of-day positions, price and total invested amount per symbol
+        daily_positions = (df[['symbol', 'price', 'position', 'invested']]
                            .groupby([df.index, 'symbol'])
                            .last()
                            .reset_index(names=['date', 'symbol']))
@@ -45,9 +49,7 @@ class PortfolioPerformance(object):
         daily_positions = daily_positions.merge(self.eod_prices, how='outer', on=['date', 'symbol'])
 
         # Create the cartesian product grid of all trade dates and symbols:
-        grid = pd.DataFrame([(date, symbol)
-                             for date in daily_positions['date'].unique()
-                             for symbol in daily_positions['symbol'].unique()],
+        grid = pd.DataFrame(list(product(daily_positions['date'].unique(), daily_positions['symbol'].unique())),
                             columns=['date', 'symbol'])
         # Merge grid with positions data so that we can generate a position for each day and symbol
         daily_positions = daily_positions.merge(grid, how='outer')
@@ -55,21 +57,29 @@ class PortfolioPerformance(object):
         # On dates where we don't have a trade for all symbols, fill the position with the previous day's position
         # for each symbol:
         daily_positions['position'] = daily_positions.groupby('symbol')['position'].ffill()
+        daily_positions['invested'] = daily_positions.groupby('symbol')['invested'].ffill()
         return daily_positions
 
     def daily_valuations(self) -> pd.DataFrame:
         """Returns a DataFrame with the day-to-day total value of the portfolio."""
         daily_positions = self.daily_positions()
+
         # Now that we have a position for each symbol on each day, we can calculate the total value of the portfolio
         # by multiplying the position by "price", or "close":
         daily_positions['value'] = (daily_positions['position'] *
                                     daily_positions['price'].combine_first(daily_positions['close']))
+        daily_positions['pl'] = daily_positions['value'] - daily_positions['invested']
+
         # For days when we can't calculate the value of a symbol's position due to lack of both a trade price and an
         # EOD price, carry forward the previous day's value for that symbol:
         daily_positions['value'] = daily_positions.groupby('symbol')['value'].ffill()
+        daily_positions['pl'] = daily_positions.groupby('symbol')['pl'].ffill()
 
         return daily_positions
 
     def positions(self) -> pd.DataFrame:
         """Returns the portfolio's current positions along with the current market value for each position."""
-        return self.daily_valuations().groupby('symbol')[['position', 'value']].last()
+        return (self
+                .daily_valuations()
+                .groupby('symbol')[['position', 'value', 'invested', 'pl']]
+                .last())

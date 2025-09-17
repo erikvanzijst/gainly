@@ -30,13 +30,13 @@ daily_positions_scenarios = [
         NullQuoteFetcher(),
         # expected daily positions:
         (pd.read_csv(StringIO(dedent("""\
-                    date,symbol,price,position,close
-                    2025-01-01,EUNA.DE,,,
-                    2025-01-01,IWDA,1.0,1.0,
-                    2025-02-01,EUNA.DE,2.0,2.0,
-                    2025-02-01,IWDA,,1.0,
-                    2025-03-01,EUNA.DE,1.0,1.0,
-                    2025-03-01,IWDA,3.0,5.0,
+                    date,symbol,price,position,invested,close
+                    2025-01-01,EUNA.DE,,,,
+                    2025-01-01,IWDA,1.0,1.0,1.0,
+                    2025-02-01,EUNA.DE,2.0,2.0,4.0,
+                    2025-02-01,IWDA,,1.0,1.0,
+                    2025-03-01,EUNA.DE,1.0,1.0,3.0,
+                    2025-03-01,IWDA,3.0,5.0,11.0,
                     """)),
                      parse_dates=['date'], date_format='%Y-%m-%d')
          .pipe(lambda df: df.assign(date=df['date'].dt.date))),
@@ -47,19 +47,19 @@ daily_positions_scenarios = [
         MockQuoteFetcher(),
         # expected daily positions with additional EOD prices:
         (pd.read_csv(StringIO(dedent("""\
-                    date,symbol,price,position,close
-                    2024-12-31,EUNA.DE,,,
-                    2024-12-31,IWDA,,,0.9
-                    2025-01-01,EUNA.DE,,,
-                    2025-01-01,IWDA,1.0,1.0,1.1
-                    2025-01-15,EUNA.DE,,,
-                    2025-01-15,IWDA,,1.0,2.0
-                    2025-02-01,EUNA.DE,2.0,2.0,
-                    2025-02-01,IWDA,,1.0,
-                    2025-03-01,EUNA.DE,1.0,1.0,
-                    2025-03-01,IWDA,3.0,5.0,
-                    2025-03-15,EUNA.DE,,1.0,2.0
-                    2025-03-15,IWDA,,5.0,4.0
+                    date,symbol,price,position,invested,close
+                    2024-12-31,EUNA.DE,,,,
+                    2024-12-31,IWDA,,,,0.9
+                    2025-01-01,EUNA.DE,,,,
+                    2025-01-01,IWDA,1.0,1.0,1.0,1.1
+                    2025-01-15,EUNA.DE,,,,
+                    2025-01-15,IWDA,,1.0,1.0,2.0
+                    2025-02-01,EUNA.DE,2.0,2.0,4.0,
+                    2025-02-01,IWDA,,1.0,1.0,
+                    2025-03-01,EUNA.DE,1.0,1.0,3.0,
+                    2025-03-01,IWDA,3.0,5.0,11.0,
+                    2025-03-15,EUNA.DE,,1.0,3.0,2.0
+                    2025-03-15,IWDA,,5.0,11.0,4.0
                     """)),
                      parse_dates=['date'], date_format='%Y-%m-%d')
          .pipe(lambda df: df.assign(date=df['date'].dt.date))),
@@ -70,13 +70,13 @@ daily_valuations_scenarios = [
     (
         NullQuoteFetcher(),
         (pd.read_csv(StringIO(dedent("""\
-                    date,symbol,price,position,close,value
-                    2025-01-01,EUNA.DE,,,,
-                    2025-01-01,IWDA,1.0,1.0,,1.0
-                    2025-02-01,EUNA.DE,2.0,2.0,,4.0
-                    2025-02-01,IWDA,,1.0,,1.0
-                    2025-03-01,EUNA.DE,1.0,1.0,,1.0
-                    2025-03-01,IWDA,3.0,5.0,,15.0
+                    date,symbol,price,position,invested,close,value,pl
+                    2025-01-01,EUNA.DE,,,,,,
+                    2025-01-01,IWDA,1.0,1.0,1.0,,1.0,0.0
+                    2025-02-01,EUNA.DE,2.0,2.0,4.0,,4.0,0.0
+                    2025-02-01,IWDA,,1.0,1.0,,1.0,0.0
+                    2025-03-01,EUNA.DE,1.0,1.0,3.0,,1.0,-2.0
+                    2025-03-01,IWDA,3.0,5.0,11.0,,15.0,4.0
                     """)),
                      parse_dates=['date'], date_format='%Y-%m-%d')
          .pipe(lambda df: df.assign(date=df['date'].dt.date))),
@@ -84,19 +84,19 @@ daily_valuations_scenarios = [
     (
         MockQuoteFetcher(),
         (pd.read_csv(StringIO(dedent("""\
-                    date,symbol,price,position,close,value
-                    2024-12-31,EUNA.DE,,,,
-                    2024-12-31,IWDA,,,0.9,
-                    2025-01-01,EUNA.DE,,,,
-                    2025-01-01,IWDA,1.0,1.0,1.1,1.0
-                    2025-01-15,EUNA.DE,,,,
-                    2025-01-15,IWDA,,1.0,2.0,2.0
-                    2025-02-01,EUNA.DE,2.0,2.0,,4.0
-                    2025-02-01,IWDA,,1.0,,2.0
-                    2025-03-01,EUNA.DE,1.0,1.0,,1.0
-                    2025-03-01,IWDA,3.0,5.0,,15.0
-                    2025-03-15,EUNA.DE,,1.0,2.0,2.0
-                    2025-03-15,IWDA,,5.0,4.0,20.0
+                    date,symbol,price,position,invested,close,value,pl
+                    2024-12-31,EUNA.DE,,,,,,
+                    2024-12-31,IWDA,,,,0.9,,
+                    2025-01-01,EUNA.DE,,,,,,
+                    2025-01-01,IWDA,1.0,1.0,1.0,1.1,1.0,0.0
+                    2025-01-15,EUNA.DE,,,,,,
+                    2025-01-15,IWDA,,1.0,1.0,2.0,2.0,1.0
+                    2025-02-01,EUNA.DE,2.0,2.0,4.0,,4.0,0.0
+                    2025-02-01,IWDA,,1.0,1.0,,2.0,1.0
+                    2025-03-01,EUNA.DE,1.0,1.0,3.0,,1.0,-2.0
+                    2025-03-01,IWDA,3.0,5.0,11.0,,15.0,4.0
+                    2025-03-15,EUNA.DE,,1.0,3.0,2.0,2.0,-1.0
+                    2025-03-15,IWDA,,5.0,11.0,4.0,20.0,9.0
                     """)), parse_dates=['date'], date_format='%Y-%m-%d')
          .pipe(lambda df: df.assign(date=df['date'].dt.date))),
     )
@@ -105,11 +105,21 @@ daily_valuations_scenarios = [
 positions_scenarios = [
     (
         NullQuoteFetcher(),
-        pd.DataFrame({'symbol': ['EUNA.DE', 'IWDA'], 'position': [1.0, 5.0], 'value': [1.0, 15.0]}).set_index('symbol')
+        (pd.DataFrame({'symbol': ['EUNA.DE', 'IWDA'],
+                       'position': [1.0, 5.0],
+                       'value': [1.0, 15.0],
+                       'invested': [3.0, 11.0],
+                       'pl': [-2.0, 4.0]})
+         .set_index('symbol'))
     ),
     (
         MockQuoteFetcher(),
-        pd.DataFrame({'symbol': ['EUNA.DE', 'IWDA'], 'position': [1.0, 5.0], 'value': [2.0, 20.0]}).set_index('symbol')
+        (pd.DataFrame({'symbol': ['EUNA.DE', 'IWDA'],
+                       'position': [1.0, 5.0],
+                       'value': [2.0, 20.0],
+                       'invested': [3.0, 11.0],
+                       'pl': [-1.0, 9.0]})
+         .set_index('symbol'))
     ),
 ]
 
