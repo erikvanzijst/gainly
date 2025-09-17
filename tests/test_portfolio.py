@@ -134,9 +134,8 @@ class TestPortfolioPerformance:
                            datetime(2025, 2, 1),
                            datetime(2025, 3, 1, hour=14)],
             'symbol': ['IWDA', 'EUNA.DE', 'IWDA', 'EUNA.DE', 'IWDA'],
-            'side': ['buy', 'sell', 'buy', 'buy', 'buy'],
             'price': [1, 1, 1, 2, 3],
-            'quantity': [1, 1, 1, 2, 3]
+            'quantity': [1, -1, 1, 2, 3]
         })
 
     @pytest.mark.parametrize("eod_fetcher,expected", daily_positions_scenarios)

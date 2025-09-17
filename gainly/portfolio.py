@@ -13,7 +13,7 @@ class PortfolioPerformance(object):
     def __init__(self, transactions: pd.DataFrame, quote_fetcher: QuoteFetcher = None):
         """
         :param transactions:    a DataFrame of transactions, with columns:
-                                trade_date, symbol, side, price, quantity
+                                trade_date, symbol, price, quantity
         :param quote_fetcher:   a QuoteFetcher instance for historical end-of-day price data
         """
         self.txns = transactions.copy()
@@ -28,10 +28,9 @@ class PortfolioPerformance(object):
     def daily_positions(self) -> pd.DataFrame:
         """Returns a DataFrame of daily positions for the portfolio."""
         df = self.txns.copy().set_index('trade_date').sort_index()
-        df['position'] = (df.assign(quantity=df['quantity'] * df['side'].map({'buy': 1, 'sell': -1}))
-                            .groupby('symbol')['quantity']
+        df['position'] = (df.groupby('symbol')['quantity']
                             .cumsum())
-        df['invested'] = (df.assign(invested=df['price'] * df['quantity'] * df['side'].map({'buy': 1, 'sell': -1}))
+        df['invested'] = (df.assign(invested=df['price'] * df['quantity'])
                           .groupby('symbol')['invested']
                           .cumsum())
 

@@ -21,11 +21,10 @@ with conn.session as session:
             symbol     VARCHAR   NOT NULL,
             name       VARCHAR,
             isin       VARCHAR,
-            side       VARCHAR   NOT NULL,
             quantity   FLOAT     NOT NULL,
             price      FLOAT     NOT NULL,
             broker     VARCHAR,
-            PRIMARY KEY (trade_date, symbol, side, broker)
+            PRIMARY KEY (trade_date, symbol, broker)
         );
         '''))
     session.commit()
@@ -56,10 +55,13 @@ txns = selector(txns)
 portfolio = PortfolioPerformance(txns, YahooFinance())
 
 with st.expander('Positions'):
-    st.dataframe(portfolio.positions().reset_index(), use_container_width=False, hide_index=True,
+    st.dataframe(portfolio.positions().reset_index()[['symbol', 'position', 'value', 'pl']],
+                 use_container_width=False, hide_index=True,
                  column_config={
                      'position': st.column_config.NumberColumn(format='localized'),
-                     'value': st.column_config.NumberColumn(format='euro')})
+                     'value': st.column_config.NumberColumn(format='euro'),
+                     'pl': st.column_config.NumberColumn(format='euro'),
+                 })
 
 valuations = portfolio.daily_valuations()
 fig = px.area(valuations[['date', 'symbol', 'value']], x="date", y="value", color="symbol", line_group='symbol', title='Portfolio performance')
