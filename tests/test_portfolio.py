@@ -3,14 +3,16 @@ from io import StringIO
 from textwrap import dedent
 
 import pandas as pd
+import pandera.pandas as pa
 import pytest
+from pandera.typing.pandas import DataFrame
 
-from gainly.eod import QuoteFetcher, NullQuoteFetcher
+from gainly.eod import QuoteFetcher, NullQuoteFetcher, EODPriceSchema
 from gainly.portfolio import PortfolioPerformance
 
 
 class MockQuoteFetcher(QuoteFetcher):
-    prices = pd.DataFrame({
+    prices = DataFrame[EODPriceSchema]({
             'date': [date(2024, 12, 31),
                      date(2025, 1, 1),
                      date(2025, 1, 15),
@@ -19,7 +21,8 @@ class MockQuoteFetcher(QuoteFetcher):
             'symbol': ['IWDA', 'IWDA', 'IWDA', 'IWDA', 'EUNA.DE'],
             'close': [0.9, 1.1, 2, 4, 2]
         })
-    def get_oed_prices(self, symbol: str, date_from: date, date_to: date) -> pd.DataFrame:
+    @pa.check_types
+    def get_oed_prices(self, symbol: str, date_from: date, date_to: date) -> DataFrame[EODPriceSchema]:
         return self.prices[self.prices['symbol'] == symbol]
 
 

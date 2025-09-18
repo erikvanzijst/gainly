@@ -3,9 +3,11 @@ from datetime import date, datetime, timezone, time, timedelta
 from functools import cache
 
 import pandas as pd
+import pandera.pandas as pa
 import requests
+from pandera.typing.pandas import DataFrame
 
-from gainly.eod import QuoteFetcher
+from gainly.eod import QuoteFetcher, EODPriceSchema
 
 
 @cache
@@ -19,7 +21,8 @@ class YahooFinance(QuoteFetcher):
     def __init__(self):
         pass
 
-    def get_oed_prices(self, symbol: str, date_from: date, date_to: date) -> pd.DataFrame:
+    @pa.check_types
+    def get_oed_prices(self, symbol: str, date_from: date, date_to: date) -> DataFrame[EODPriceSchema]:
         qs = urllib.parse.urlencode(
             {'interval': '1d',
              'period1': to_epoch(date_from),
@@ -32,7 +35,9 @@ class YahooFinance(QuoteFetcher):
         timestamps = [datetime.fromtimestamp(ts, tz).date() for ts in payload['chart']['result'][0]['timestamp']]
         closes = payload['chart']['result'][0]['indicators']['quote'][0]['close']
 
-        return pd.DataFrame({'date': timestamps, 'close': closes}).assign(symbol=symbol)
+        return (pd.DataFrame({'date': timestamps, 'close': closes})
+                .assign(symbol=symbol)
+                .pipe(DataFrame[EODPriceSchema]))
 
 
 def to_epoch(dt: datetime|date) -> int:

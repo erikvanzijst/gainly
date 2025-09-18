@@ -24,12 +24,7 @@ class DailyPositionsSchema(pa.DataFrameModel):
     invested: float = pa.Field(nullable=True, coerce=True)
 
 
-class DailyValuationSchema(pa.DataFrameModel):
-    date: date = pa.Field(coerce=True)
-    symbol: str = pa.Field(coerce=True)
-    price: float = pa.Field(ge=0, nullable=True, coerce=True)
-    position: float = pa.Field(ge=0, nullable=True, coerce=True)
-    invested: float = pa.Field(nullable=True, coerce=True)
+class DailyValuationSchema(DailyPositionsSchema):
     close:float = pa.Field(nullable=True, coerce=True)
     value: float = pa.Field(nullable=True, coerce=True)
     pl: float = pa.Field(nullable=True, coerce=True)
@@ -113,7 +108,7 @@ class PortfolioPerformance(object):
         daily_positions['value'] = daily_positions.groupby('symbol')['value'].ffill()
         daily_positions['pl'] = daily_positions.groupby('symbol')['pl'].ffill()
 
-        return daily_positions
+        return daily_positions.pipe(DataFrame[DailyValuationSchema])
 
     @pa.check_types
     def positions(self) -> DataFrame[PositionsSchema]:
