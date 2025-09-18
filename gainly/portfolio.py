@@ -1,16 +1,53 @@
-from datetime import date
+from datetime import date, datetime
 from functools import reduce
 from itertools import product
 
 import pandas as pd
+import pandera.pandas as pa
+from pandera.typing.pandas import Index, DataFrame
 
 from gainly.eod import QuoteFetcher, NullQuoteFetcher
+
+
+class TransactionSchema(pa.DataFrameModel):
+    trade_date: datetime = pa.Field(coerce=True)
+    symbol: str = pa.Field(coerce=True)
+    price: float = pa.Field(ge=0, coerce=True)
+    quantity: float = pa.Field(coerce=True)
+
+
+class DailyPositionsSchema(pa.DataFrameModel):
+    date: date = pa.Field(coerce=True)
+    symbol: str = pa.Field(coerce=True)
+    price: float = pa.Field(ge=0, nullable=True, coerce=True)
+    position: float = pa.Field(ge=0, nullable=True, coerce=True)
+    invested: float = pa.Field(nullable=True, coerce=True)
+
+
+class DailyValuationSchema(pa.DataFrameModel):
+    date: date = pa.Field(coerce=True)
+    symbol: str = pa.Field(coerce=True)
+    price: float = pa.Field(ge=0, nullable=True, coerce=True)
+    position: float = pa.Field(ge=0, nullable=True, coerce=True)
+    invested: float = pa.Field(nullable=True, coerce=True)
+    close:float = pa.Field(nullable=True, coerce=True)
+    value: float = pa.Field(nullable=True, coerce=True)
+    pl: float = pa.Field(nullable=True, coerce=True)
+
+
+class PositionsSchema(pa.DataFrameModel):
+    symbol: Index[str] = pa.Field(coerce=True)
+    position: float = pa.Field(ge=0, coerce=True)
+    value: float = pa.Field(coerce=True)
+    invested: float = pa.Field(coerce=True)
+    pl: float = pa.Field(coerce=True)
 
 
 class PortfolioPerformance(object):
     """Calculates portfolio performance."""
 
-    def __init__(self, transactions: pd.DataFrame, quote_fetcher: QuoteFetcher = None):
+    @pa.check_types
+    def __init__(self, transactions: DataFrame[TransactionSchema], quote_fetcher: QuoteFetcher = None):
         """
         :param transactions:    a DataFrame of transactions, with columns:
                                 trade_date, symbol, price, quantity
@@ -25,7 +62,8 @@ class PortfolioPerformance(object):
                                           date_to=max(self.txns['trade_date'].max().date(), date.today()))
              for symbol in self.txns['symbol'].unique()))
 
-    def daily_positions(self) -> pd.DataFrame:
+    @pa.check_types
+    def daily_positions(self) -> DataFrame[DailyPositionsSchema]:
         """Returns a DataFrame of daily positions for the portfolio."""
         df = self.txns.copy().set_index('trade_date').sort_index()
         df['position'] = (df.groupby('symbol')['quantity']
@@ -59,7 +97,8 @@ class PortfolioPerformance(object):
         daily_positions['invested'] = daily_positions.groupby('symbol')['invested'].ffill()
         return daily_positions
 
-    def daily_valuations(self) -> pd.DataFrame:
+    @pa.check_types
+    def daily_valuations(self) -> DataFrame[DailyValuationSchema]:
         """Returns a DataFrame with the day-to-day total value of the portfolio."""
         daily_positions = self.daily_positions()
 
@@ -76,8 +115,12 @@ class PortfolioPerformance(object):
 
         return daily_positions
 
-    def positions(self) -> pd.DataFrame:
-        """Returns the portfolio's current positions along with the current market value for each position."""
+    @pa.check_types
+    def positions(self) -> DataFrame[PositionsSchema]:
+        """Returns the portfolio's current positions along with the current market value for each position.
+
+        :return:    a DataFrame adhering to the `positionsSchema` schema.
+        """
         return (self
                 .daily_valuations()
                 .groupby('symbol')[['position', 'value', 'invested', 'pl']]
