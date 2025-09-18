@@ -79,14 +79,16 @@ with pos, st.expander('Positions'):
                  })
 
 with chart:
-    df = (valuations[['date', 'invested', 'pl']]
+    returns_only = st.toggle('Show returns only', key='show_returns')
+    df = (valuations[['date'] + ([] if returns_only else ['invested']) + ['pl']]
           .rename(columns={'pl': 'returns'})
           .groupby('date')
           .sum()
           .reset_index()
           .melt(id_vars=['date'], var_name='type', value_name='value'))
 
-    fig = px.area(df, x="date", y="value", color="type", line_group='type')
+    fig = px.area(df, x="date", y="value", color="type", line_group='type',
+                  color_discrete_map={'invested': '#1f77b4', 'returns': '#2ca02c'})
     for dt in valuations[valuations['price'] > 0]['date'].unique():
         fig.add_vline(x=dt, line_dash="dot", line_color="black")
     fig.update_layout(
