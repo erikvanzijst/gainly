@@ -42,6 +42,7 @@ if 'hide_amounts' not in st.session_state:
     st.session_state['hide_amounts'] = False
 with st.popover('Options'):
     st.checkbox('Hide amounts in graphs', key='hide_amounts')
+    st.checkbox('No end-of-day quotes', key='no_eod')
 
 
 @st.cache_data
@@ -57,7 +58,7 @@ chart = st.container()
 pos = st.container()
 trades = st.container()
 
-portfolio = PortfolioPerformance(txns, YahooFinance())
+portfolio = PortfolioPerformance(txns, None if st.session_state['no_eod'] else YahooFinance())
 valuations = portfolio.daily_valuations()
 positions = portfolio.positions().reset_index()
 pl = positions['pl'].sum()
@@ -79,7 +80,7 @@ with pos, st.expander('Positions'):
                  })
 
 with chart:
-    returns_only = st.toggle('Show returns only', key='show_returns')
+    returns_only = st.toggle('Returns only', key='show_returns')
     df = (valuations[['date'] + ([] if returns_only else ['invested']) + ['pl']]
           .rename(columns={'pl': 'returns'})
           .groupby('date')

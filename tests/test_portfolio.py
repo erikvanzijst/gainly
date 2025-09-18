@@ -132,10 +132,10 @@ class TestPortfolioPerformance:
     def transactions(self):
         return pd.DataFrame({
             'trade_date': [datetime(2025, 1, 1, hour=12),
-                           datetime(2025, 3, 1, hour=12),
+                           datetime(2025, 3, 1, hour=13),
                            datetime(2025, 3, 1, hour=13),
                            datetime(2025, 2, 1),
-                           datetime(2025, 3, 1, hour=14)],
+                           datetime(2025, 3, 1, hour=13)],
             'symbol': ['IWDA', 'EUNA.DE', 'IWDA', 'EUNA.DE', 'IWDA'],
             'price': [1, 1, 1, 2, 3],
             'quantity': [1, -1, 1, 2, 3]

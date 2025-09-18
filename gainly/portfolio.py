@@ -14,6 +14,7 @@ class TransactionSchema(pa.DataFrameModel):
     symbol: str = pa.Field(coerce=True)
     price: float = pa.Field(ge=0, coerce=True)
     quantity: float = pa.Field(coerce=True)
+    broker: str = pa.Field(nullable=True, coerce=True)
 
 
 class DailyPositionsSchema(pa.DataFrameModel):
@@ -64,8 +65,8 @@ class PortfolioPerformance(object):
         df['position'] = (df.groupby('symbol')['quantity']
                             .cumsum())
         df['invested'] = (df.assign(invested=df['price'] * df['quantity'])
-                          .groupby('symbol')['invested']
-                          .cumsum())
+                            .groupby('symbol')['invested']
+                            .cumsum())
 
         # Convert datetime index to date
         df.index = df.index.date
@@ -76,8 +77,7 @@ class PortfolioPerformance(object):
                            .last()
                            .reset_index(names=['date', 'symbol']))
 
-        # Merge the eod prices with the daily positions, excluding eod prices for dates where we already have a price
-        # from a transaction:
+        # Merge the eod prices with the daily positions:
         daily_positions = daily_positions.merge(self.eod_prices, how='outer', on=['date', 'symbol'])
 
         # Create the cartesian product grid of all trade dates and symbols:

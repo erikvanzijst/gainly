@@ -8,7 +8,7 @@ from pandera.typing.pandas import DataFrame
 class EODPriceSchema(pa.DataFrameModel):
     date: date = pa.Field(coerce=True)
     symbol: str = pa.Field(coerce=True)
-    close: float = pa.Field(coerce=True)
+    close: float = pa.Field(nullable=True, coerce=True)
 
 
 class QuoteFetcher(ABC):

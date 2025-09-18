@@ -13,3 +13,4 @@ db/transactions.db
 .venv/
 .idea/
 .uv/
+var/

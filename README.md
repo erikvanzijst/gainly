@@ -20,7 +20,8 @@ uv run pytest -s tests/
 
 # TODO
 
-- [ ] Support multiple transactions on the same timestamp
+- [X] Support multiple transactions on the same timestamp
 - [ ] Compute capital gains for all sell orders and display in txn history
 - [ ] Multi currency support
 - [ ] Compute cost base per position
+- [ ] Create a normalized instrument table with isin/yahoo_ticker/asset_class/currency
