@@ -16,3 +16,11 @@ PYTHONPATH=. uv run streamlit run gainly/lit/main.py
 ```
 uv run pytest -s tests/
 ```
+
+
+# TODO
+
+- [ ] Support multiple transactions on the same timestamp
+- [ ] Compute capital gains for all sell orders and display in txn history
+- [ ] Multi currency support
+- [ ] Compute cost base per position

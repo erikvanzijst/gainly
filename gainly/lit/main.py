@@ -4,8 +4,9 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 from sqlalchemy.sql import text
+from streamlit_extras.bottom_container import bottom
 
-from gainly.lit.util import row_selector
+from gainly.lit.util import row_selector, align
 from gainly.portfolio import PortfolioPerformance
 from gainly.yahoo import YahooFinance
 
@@ -95,3 +96,8 @@ with chart:
 
 with trades, st.expander('Trade history'):
     st.dataframe(txns, use_container_width=True)
+
+with bottom():
+    align('<a href="https://github.com/erikvanzijst/gainly">'
+          '<img src="https://badgen.net/static/github/code?icon=github">'
+          '</a>', 'center', unsafe_allow_html=True)
