@@ -1,3 +1,4 @@
+from collections import namedtuple
 from datetime import datetime, date
 from io import StringIO
 from textwrap import dedent
@@ -8,7 +9,7 @@ import pytest
 from pandera.typing.pandas import DataFrame
 
 from gainly.eod import QuoteFetcher, NullQuoteFetcher, EODPriceSchema
-from gainly.portfolio import PortfolioPerformance
+from gainly.portfolio import PortfolioPerformance, TransactionSchema
 
 
 class MockQuoteFetcher(QuoteFetcher):
@@ -138,7 +139,8 @@ class TestPortfolioPerformance:
                            datetime(2025, 3, 1, hour=13)],
             'symbol': ['IWDA', 'EUNA.DE', 'IWDA', 'EUNA.DE', 'IWDA'],
             'price': [1, 1, 1, 2, 3],
-            'quantity': [1, -1, 1, 2, 3]
+            'quantity': [1, -1, 1, 2, 3],
+            'broker': ['broker1', 'broker2', 'broker1', 'broker2', 'broker1']
         })
 
     @pytest.mark.parametrize("eod_fetcher,expected", daily_positions_scenarios)
@@ -158,3 +160,47 @@ class TestPortfolioPerformance:
         portfolio = PortfolioPerformance(transactions, eod_fetcher)
         result = portfolio.positions()
         pd.testing.assert_frame_equal(result, expected)
+
+
+Trade = namedtuple('Trade', ['trade_date', 'price', 'quantity'])
+
+class TestIRR:
+    scenarios = [
+        (
+            [
+                Trade(datetime(2025, 1, 1), 1, 100),
+                Trade(datetime(2026, 1, 1), 2, 0),
+            ],
+            1.0
+        ),
+        (
+            [
+                Trade(datetime(2025, 1, 1), 1, 100),
+                Trade(datetime(2026, 1, 1), 2, -100),
+            ],
+            1.0
+        ),
+        (
+            [
+                Trade(datetime(2025, 1, 1), 1, 100),
+                Trade(datetime(2025, 7, 1), 2, 0),
+            ],
+            3.046219
+        ),
+        (
+            [
+                Trade(datetime(2025, 1, 1), 1, 10000),
+                Trade(datetime(2025, 7, 1), 2, -5000),
+                Trade(datetime(2026, 1, 1), 2.4, -5000),
+            ],
+            1.914801
+        ),
+    ]
+
+    @pytest.mark.parametrize("trades,expected", scenarios)
+    def test_irr(self, trades, expected):
+        transactions = (DataFrame(trades, columns=['trade_date', 'price', 'quantity'])
+                        .assign(symbol='symbol', broker='broker')
+                        .pipe(DataFrame[TransactionSchema]))
+        portfolio = PortfolioPerformance(transactions)
+        assert portfolio.get_irr() == pytest.approx(expected)

@@ -67,7 +67,7 @@ pl = positions['pl'].sum()
 with metric:
     st.metric('Portfolio value',
               f"€{positions['value'].sum():,.2f}",
-              f"{pl / positions['invested'].sum() * 100:.2f}% | €{pl:,.2f}",
+              f"{portfolio.get_irr() * 100:.2f}% | €{pl:,.2f}",
               border=True, width='content')
 
 with pos, st.expander('Positions'):

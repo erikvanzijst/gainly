@@ -5,6 +5,7 @@ from itertools import product
 import pandas as pd
 import pandera.pandas as pa
 from pandera.typing.pandas import Index, DataFrame
+from pyxirr import xirr
 
 from gainly.eod import QuoteFetcher, NullQuoteFetcher
 
@@ -120,3 +121,20 @@ class PortfolioPerformance(object):
                 .daily_valuations()
                 .groupby('symbol')[['position', 'value', 'invested', 'pl']]
                 .last())
+
+    def get_irr(self):
+        """Returns the portfolio's xirr."""
+        trades = self.txns.assign(date=self.txns['trade_date'].dt.date)
+        cashflows = trades.assign(cf=trades['price'] * trades['quantity'] * -1)[['date', 'cf']]
+
+        remaining_value = (self
+                           .daily_valuations()
+                           .groupby('symbol')[['date', 'value']]
+                           .last()
+                           .reset_index(drop=True)
+                           .rename(columns={'value': 'cf'})
+                           .pipe(lambda df: df.where(df['cf'] > 0)))
+
+        cashflows = pd.concat([cashflows, remaining_value]).groupby(['date']).sum()
+
+        return xirr(cashflows.reset_index())

@@ -9,6 +9,7 @@ dependencies = [
     "pandera>=0.26.1",
     "plotly>=6.3.0",
     "pydantic>=2.11.7",
+    "pyxirr>=0.10.7",
     "requests>=2.32.5",
     "sqlalchemy>=2.0.43",
     "streamlit>=1.49.1",
